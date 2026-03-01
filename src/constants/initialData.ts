@@ -13,7 +13,7 @@ export const INITIAL_ROUTINES: Routine[] = [
         title: 'Día 0 — Voleyball',
         description: 'Actividad deportiva intensa.',
         exercises: [
-          { id: 'e0', name: 'Voleyball', muscles: 'Cuerpo completo, cardio', sets: 1, reps: '1h', weight: '-', restTime: 0, imageUrl: 'https://img.icons8.com/ios-filled/100/000000/volleyball.png' },
+          { id: 'e0', name: 'Voleyball', muscles: 'Cuerpo completo, cardio', type: 'cardio', duration: 60, intensity: 'medium', sets: 0, reps: '', weight: '', restTime: 0, imageUrl: 'https://img.icons8.com/ios-filled/100/000000/volleyball.png' },
         ]
       },
       {

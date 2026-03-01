@@ -45,6 +45,9 @@ import { StatsView } from './components/Stats/StatsView';
 import { ExerciseDetailsModal } from './components/Modals/ExerciseDetailsModal';
 import { ManualAssignmentModal } from './components/Modals/ManualAssignmentModal';
 import { RestTimer } from './components/UI/RestTimer';
+import { SimpleAuth } from './components/Auth/SimpleAuth';
+
+import { supabaseService } from './services/supabaseService';
 
 /**
  * Main Application Component
@@ -52,40 +55,71 @@ import { RestTimer } from './components/UI/RestTimer';
  */
 export default function App() {
   const [view, setView] = useState<ViewState>('schedule');
-  const [routines, setRoutines] = useState<Routine[]>(() => {
-    const saved = localStorage.getItem('ironflow_routines');
-    return saved ? JSON.parse(saved) : INITIAL_ROUTINES;
-  });
-  const [schedule, setSchedule] = useState<ScheduledDay[]>(() => {
-    const saved = localStorage.getItem('ironflow_schedule');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [activeRoutineId, setActiveRoutineId] = useState<string | null>(() => {
-    const saved = localStorage.getItem('ironflow_active_routine_id');
-    return saved || (routines[0]?.id || null);
-  });
+  const [routines, setRoutines] = useState<Routine[]>([]);
+  const [schedule, setSchedule] = useState<ScheduledDay[]>([]);
+  const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null);
+  const [isLoadingData, setIsLoadingData] = useState(true);
   
   const [selectedDayForDetails, setSelectedDayForDetails] = useState<{ day: RoutineDay, date?: string } | null>(null);
   const [isAssigningToDate, setIsAssigningToDate] = useState<string | null>(null);
   const [activeRestTimer, setActiveRestTimer] = useState<{ seconds: number } | null>(null);
 
-  // Persistence
+  // Initial Data Fetch & Migration
   useEffect(() => {
-    localStorage.setItem('ironflow_routines', JSON.stringify(routines));
-    if (activeRoutineId && !routines.find(r => r.id === activeRoutineId)) {
-      setActiveRoutineId(routines[0]?.id || null);
-    }
-  }, [routines, activeRoutineId]);
+    const initData = async () => {
+      try {
+        const data = await supabaseService.getUserData();
+        
+        if (data) {
+          setRoutines(data.routines || []);
+          setSchedule(data.schedule || []);
+          setActiveRoutineId(data.routines?.[0]?.id || null);
+        } else {
+          // Migration from localStorage if no cloud data exists
+          const localRoutines = localStorage.getItem('ironflow_routines');
+          const localSchedule = localStorage.getItem('ironflow_schedule');
+          
+          const routinesData = localRoutines ? JSON.parse(localRoutines) : JSON.parse(JSON.stringify(INITIAL_ROUTINES));
+          const scheduleData = localSchedule ? JSON.parse(localSchedule) : [];
+          
+          setRoutines(routinesData);
+          setSchedule(scheduleData);
+          setActiveRoutineId(routinesData[0]?.id || null);
+          
+          // Save to Supabase for the first time
+          await supabaseService.saveUserData(routinesData, scheduleData);
+        }
+      } catch (err) {
+        console.error('Error initializing data:', err);
+      } finally {
+        setIsLoadingData(false);
+      }
+    };
 
+    initData();
+  }, []);
+
+  // Persistence to Supabase (with debounce)
+  useEffect(() => {
+    if (isLoadingData) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        await supabaseService.saveUserData(routines, schedule);
+      } catch (err) {
+        console.error('Error auto-saving data:', err);
+      }
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(timer);
+  }, [routines, schedule, isLoadingData]);
+
+  // Active Routine ID Persistence (Local is fine for this UI state)
   useEffect(() => {
     if (activeRoutineId) {
       localStorage.setItem('ironflow_active_routine_id', activeRoutineId);
     }
   }, [activeRoutineId]);
-
-  useEffect(() => {
-    localStorage.setItem('ironflow_schedule', JSON.stringify(schedule));
-  }, [schedule]);
 
   // Calendar Logic
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -389,16 +423,25 @@ export default function App() {
   };
 
   const handleResetAll = () => {
-    const confirmed = window.confirm('¿Estás seguro de que quieres restaurar las rutinas por defecto? Esto borrará tus rutinas actuales y todo tu historial de entrenamientos.');
-    if (confirmed) {
-      setRoutines(INITIAL_ROUTINES);
-      setSchedule([]);
-      setActiveRoutineId(INITIAL_ROUTINES[0]?.id || null);
-      localStorage.removeItem('ironflow_routines');
-      localStorage.removeItem('ironflow_schedule');
-      localStorage.removeItem('ironflow_active_routine_id');
-    }
+    setRoutines(JSON.parse(JSON.stringify(INITIAL_ROUTINES)));
+    setSchedule([]);
+    setActiveRoutineId(INITIAL_ROUTINES[0]?.id || null);
+    localStorage.removeItem('ironflow_routines');
+    localStorage.removeItem('ironflow_schedule');
+    localStorage.removeItem('ironflow_active_routine_id');
   };
+
+  if (isLoadingData) {
+    return (
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center">
+        <motion.div 
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-12 h-12 border-4 border-brand-500 border-t-transparent rounded-full"
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-zinc-50/50">

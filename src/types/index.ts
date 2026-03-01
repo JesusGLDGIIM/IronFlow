@@ -1,3 +1,6 @@
+export type ExerciseType = 'strength' | 'cardio';
+export type CardioIntensity = 'low' | 'medium' | 'high';
+
 /**
  * Represents a single exercise in a routine.
  */
@@ -5,10 +8,18 @@ export interface Exercise {
   id: string;
   name: string;
   muscles: string;
+  type?: ExerciseType;
+  
+  // Strength fields
   sets: number;
   reps: string;
   weight: string;
   restTime: number; // in seconds
+  
+  // Cardio fields
+  duration?: number; // in minutes
+  intensity?: CardioIntensity;
+  
   imageUrl?: string;
 }
 
@@ -19,9 +30,17 @@ export interface ExerciseLog {
   exerciseId: string;
   name: string;
   muscles: string;
+  type?: ExerciseType;
+  
+  // Strength fields
   sets: number;
   reps: string;
   weight: string;
+  
+  // Cardio fields
+  duration?: number;
+  intensity?: CardioIntensity;
+  
   completed: boolean;
   completedAt?: string; // ISO string
   imageUrl?: string;

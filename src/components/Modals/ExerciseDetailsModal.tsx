@@ -80,24 +80,37 @@ export const ExerciseDetailsModal: React.FC<ExerciseDetailsModalProps> = ({
                         />
                       </div>
                     )}
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <h4 className={cn(
-                        "font-bold transition-colors",
+                        "font-bold transition-colors truncate",
                         isDone ? "text-brand-700" : "text-zinc-900"
                       )}>{ex.name}</h4>
-                      <p className="text-[10px] text-zinc-400 italic leading-tight mb-1">
+                      <p className="text-[10px] text-zinc-400 italic leading-tight mb-1 truncate">
                         {ex.muscles}
                       </p>
                       <div className="flex items-center gap-3 mt-1">
-                        <span className="text-xs text-zinc-500 font-medium">
-                          <span className="text-brand-600 font-bold">{ex.sets}</span> Series
-                        </span>
-                        <span className="text-xs text-zinc-500 font-medium">
-                          <span className="text-brand-600 font-bold">{ex.reps}</span> Reps
-                        </span>
-                        <span className="text-xs text-zinc-500 font-medium">
-                          <span className="text-brand-600 font-bold">{ex.weight}</span>
-                        </span>
+                        {(!ex.type || ex.type === 'strength') ? (
+                          <>
+                            <span className="text-xs text-zinc-500 font-medium">
+                              <span className="text-brand-600 font-bold">{ex.sets}</span> Series
+                            </span>
+                            <span className="text-xs text-zinc-500 font-medium">
+                              <span className="text-brand-600 font-bold">{ex.reps}</span> Reps
+                            </span>
+                            <span className="text-xs text-zinc-500 font-medium">
+                              <span className="text-brand-600 font-bold">{ex.weight}</span>
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-xs text-zinc-500 font-medium">
+                              <span className="text-brand-600 font-bold">{ex.duration}</span> min
+                            </span>
+                            <span className="text-xs text-zinc-500 font-medium">
+                              Intensidad <span className="text-brand-600 font-bold capitalize">{ex.intensity === 'low' ? 'Baja' : ex.intensity === 'medium' ? 'Media' : 'Alta'}</span>
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
